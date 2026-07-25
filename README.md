@@ -1,9 +1,8 @@
-markdown
-**MoeKoeMusic 插件,一键下载当前播放的音乐文件。**
+**一键下载当前播放的音乐文件**
 
 # MoeKoeMusic-download-plugin
 
-本插件用于……（项目简介）
+本插件用于MoeKoeMusic（一键下载当前播放的音乐文件）
 
  📂 文件结构
 
