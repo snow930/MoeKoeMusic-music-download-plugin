@@ -14,7 +14,7 @@ MoeKoeMusic-download-plugin/
 ```
 
 
-##安装方法
+## 安装方法
 在 MoeKoeMusic 中：设置 → 插件 → 安装插件 → 选择 zip 文件。
 
 读取当前歌曲信息 — 从 localStorage['current_song'] 获取歌曲的 url、title、artist 等字段
