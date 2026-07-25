@@ -1,11 +1,21 @@
-MoeKoeMusic 插件,一键下载当前播放的音乐文件。
+markdown
+**MoeKoeMusic 插件,一键下载当前播放的音乐文件。**
 
+# MoeKoeMusic-download-plugin
+
+本插件用于……（项目简介）
+
+ 📂 文件结构
+
+```text
 MoeKoeMusic-download-plugin/
 ├── manifest.json   # 插件清单
 ├── content.js      # 下载逻辑
 └── styles.css      # 按钮样式
+```
 
-安装方法
+
+##安装方法##
 在 MoeKoeMusic 中：设置 → 插件 → 安装插件 → 选择 zip 文件。
 
 读取当前歌曲信息 — 从 localStorage['current_song'] 获取歌曲的 url、title、artist 等字段
