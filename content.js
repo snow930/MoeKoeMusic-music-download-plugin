@@ -4,6 +4,10 @@
   if (window.__MOEKOE_DOWNLOAD__) return;
   window.__MOEKOE_DOWNLOAD__ = true;
 
+  // 与 manifest.json 的 version 保持同步（content script 无法读取 manifest）
+  var PLUGIN_VERSION = '1.1.2';
+  var VERSION_KEY = 'moekoe_download_plugin_version';
+
   var toastTimer = null;
   var isDownloading = false;
   var cancelRequested = false;
@@ -205,8 +209,22 @@
     extraControls.appendChild(btn);
   }
 
+  // 插件更新自检：版本变化时提醒用户刷新/重启，否则运行中的仍是旧版代码
+  function checkPluginVersion() {
+    try {
+      var saved = localStorage.getItem(VERSION_KEY);
+      if (saved !== PLUGIN_VERSION) {
+        showToast('插件已更新到 v' + PLUGIN_VERSION + '，请刷新页面（Ctrl+R）或重启播放器后生效', 6000);
+        localStorage.setItem(VERSION_KEY, PLUGIN_VERSION);
+      }
+    } catch (e) {
+      console.warn('[Download] 版本自检失败:', e);
+    }
+  }
+
   function init() {
     createDownloadButton();
+    checkPluginVersion();
 
     // MoeKoeMusic 为 SPA，路由切换会重建播放器 DOM，因此需要 subtree 监听
     // 以保证按钮不丢失（回调仅在按钮缺失时重建，开销可控）。

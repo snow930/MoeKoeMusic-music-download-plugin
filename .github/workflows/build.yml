@@ -26,3 +26,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: MoeKoeMusic-download-plugin.zip
+          body: |
+            ## 更新提醒
+            ⚠️ 更新插件后请**刷新播放器页面（Ctrl+R）或重启应用**，否则运行中的仍是旧版代码（content script 仅页面加载时注入一次）。更新后首次打开播放器也会出现对应提示。
+
+            ### 变更
+            见仓库 README「更新日志」。
