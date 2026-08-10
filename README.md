@@ -65,6 +65,7 @@ cd dist && zip -r ../MoeKoeMusic-download-plugin.zip MoeKoeMusic-download-plugin
 
 ## 📜 更新日志
 
+- **v1.1.1** — 取消入口更明显：下载中按钮图标变为 ✕（红色）且提示"点击取消"，进度提示内嵌"取消"按钮；修复 `.downloading`/toast 的 `pointer-events:none` 导致点击取消被阻断的问题
 - **v1.1.0** — 增加下载取消；增加分块响应进度 fallback；文件名截断；错误分类提示（VIP/404/429）；cookie 透传；权限最小化
 - **v1.0.0** — 首个版本：播放栏下载按钮 + 流式下载 + 进度提示
 

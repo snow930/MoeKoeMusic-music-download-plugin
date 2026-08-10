@@ -38,7 +38,8 @@
     return 'mp3';
   }
 
-  function showToast(msg, duration) {
+  // cancelAction 存在时在 toast 内嵌"取消"按钮
+  function showToast(msg, duration, cancelAction) {
     duration = duration || 2500;
     var toast = document.querySelector('.moekoe-download-toast');
     if (!toast) {
@@ -46,9 +47,20 @@
       toast.className = 'moekoe-download-toast';
       document.body.appendChild(toast);
     }
-    toast.textContent = msg;
+    toast.innerHTML = '';
+    var span = document.createElement('span');
+    span.textContent = msg;
+    toast.appendChild(span);
+    if (cancelAction) {
+      var cancelBtn = document.createElement('button');
+      cancelBtn.className = 'moekoe-download-cancel';
+      cancelBtn.textContent = '取消';
+      cancelBtn.addEventListener('click', cancelAction);
+      toast.appendChild(cancelBtn);
+    }
     toast.style.opacity = '1';
     if (toastTimer) clearTimeout(toastTimer);
+    if (duration === 0) return; // 0 = 常驻显示
     toastTimer = setTimeout(function () {
       toast.style.opacity = '0';
     }, duration);
@@ -73,6 +85,11 @@
     return err && err.message ? err.message : '未知错误';
   }
 
+  function setButtonIcon(btn, iconClass) {
+    var i = btn.querySelector('i');
+    if (i) i.className = iconClass;
+  }
+
   async function downloadCurrentSong(btn) {
     if (isDownloading) {
       // 下载中再次点击 = 取消
@@ -84,13 +101,12 @@
     cancelRequested = false;
     btn.classList.add('downloading');
     btn.title = '点击取消下载';
+    setButtonIcon(btn, 'fa fa-times'); // 下载中图标变为 ✕，提示可取消
 
     var song = getCurrentSong();
     if (!song.url) {
       showToast('暂无音频 URL，请先播放歌曲');
-      btn.classList.remove('downloading');
-      btn.title = '下载当前歌曲';
-      isDownloading = false;
+      resetButton(btn);
       return;
     }
 
@@ -113,6 +129,8 @@
       var contentLength = response.headers.get('Content-Length');
       var total = contentLength ? parseInt(contentLength, 10) : 0;
       var loaded = 0;
+      var lastPct = -1;
+      var lastSize = '';
 
       var reader = response.body.getReader();
       var chunks = [];
@@ -128,10 +146,17 @@
         loaded += result.value.length;
         if (total > 0) {
           var pct = Math.round(loaded / total * 100);
-          showToast('下载中: ' + filename + ' (' + pct + '%)', 0);
+          if (pct !== lastPct) { // 百分比变化才重建 toast，避免高频 DOM 操作
+            lastPct = pct;
+            showToast('下载中: ' + filename + ' (' + pct + '%)', 0, function () { cancelRequested = true; });
+          }
         } else {
           // 分块传输无 Content-Length 时，按已下载字节数显示进度
-          showToast('下载中: ' + filename + ' (' + formatSize(loaded) + ')', 0);
+          var sizeNow = formatSize(loaded);
+          if (sizeNow !== lastSize) {
+            lastSize = sizeNow;
+            showToast('下载中: ' + filename + ' (' + sizeNow + ')', 0, function () { cancelRequested = true; });
+          }
         }
       }
 
@@ -150,10 +175,15 @@
     } catch (err) {
       console.error('[Download] 下载失败:', err);
       showToast('下载' + (cancelRequested ? '已取消' : '失败') + ': ' + describeError(err));
+    } finally {
+      resetButton(btn);
     }
+  }
 
+  function resetButton(btn) {
     btn.classList.remove('downloading');
     btn.title = '下载当前歌曲';
+    setButtonIcon(btn, 'fa fa-download');
     isDownloading = false;
     cancelRequested = false;
   }
