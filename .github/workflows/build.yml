@@ -19,6 +19,7 @@ jobs:
         run: |
           mkdir -p dist/MoeKoeMusic-download-plugin
           cp manifest.json content.js styles.css dist/MoeKoeMusic-download-plugin/
+          cp -r icons dist/MoeKoeMusic-download-plugin/
           cd dist
           zip -r ../MoeKoeMusic-download-plugin.zip MoeKoeMusic-download-plugin
 

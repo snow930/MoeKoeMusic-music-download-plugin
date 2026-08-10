@@ -5,7 +5,7 @@
   window.__MOEKOE_DOWNLOAD__ = true;
 
   // 与 manifest.json 的 version 保持同步（content script 无法读取 manifest）
-  var PLUGIN_VERSION = '1.1.2';
+  var PLUGIN_VERSION = '1.1.3';
   var VERSION_KEY = 'moekoe_download_plugin_version';
 
   var toastTimer = null;
