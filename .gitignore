@@ -1,0 +1,2 @@
+# 发布 zip 由 GitHub Actions 自动构建（见 .github/workflows/build.yml），不入库
+*.zip

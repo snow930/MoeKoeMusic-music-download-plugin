@@ -1,0 +1,28 @@
+name: Build plugin zip
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Package plugin
+        run: |
+          mkdir -p dist/MoeKoeMusic-download-plugin
+          cp manifest.json content.js styles.css dist/MoeKoeMusic-download-plugin/
+          cd dist
+          zip -r ../MoeKoeMusic-download-plugin.zip MoeKoeMusic-download-plugin
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: MoeKoeMusic-download-plugin.zip

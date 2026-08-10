@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "音乐下载",
+  "plugin_id": "music-download-plugin",
+  "version": "1.1.0",
+  "description": "一键下载当前播放的音乐文件",
+  "moekoe": true,
+  "minversion": "1.6.7",
+  "author": {
+    "name": "snow930",
+    "url": "https://github.com/snow930/MoeKoeMusic-music-download-plugin"
+  },
+  "permissions": [],
+  "host_permissions": [
+    "http://127.0.0.1:*/*",
+    "http://localhost:*/*",
+    "file://*/*"
+  ],
+  "content_scripts": [{
+    "matches": ["http://127.0.0.1:*/*", "http://localhost:*/*", "file://*/*"],
+    "js": ["content.js"],
+    "css": ["styles.css"],
+    "run_at": "document_idle"
+  }]
+}

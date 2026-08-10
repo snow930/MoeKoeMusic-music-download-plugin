@@ -1,0 +1,43 @@
+.extra-btn.moekoe-download {
+  position: relative;
+}
+
+.extra-btn.moekoe-download i {
+  transition: color 0.2s ease;
+}
+
+.extra-btn.moekoe-download:hover i {
+  color: var(--primary-color, #ff6b9d) !important;
+}
+
+.extra-btn.moekoe-download.downloading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.extra-btn.moekoe-download.downloading i {
+  animation: moekoe-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes moekoe-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* 下载进度提示 tooltip */
+.moekoe-download-toast {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #2a2a3e;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 999999;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+}
