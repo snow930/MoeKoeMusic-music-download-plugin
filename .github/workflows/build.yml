@@ -23,6 +23,16 @@ jobs:
           cd dist
           zip -r ../MoeKoeMusic-download-plugin.zip MoeKoeMusic-download-plugin
 
+      - name: Extract latest changelog
+        id: changelog
+        run: |
+          BODY=$(awk '/^## 📜/{flag=1; next} /^## /{flag=0} flag && /^- \*\*v/{if (found) exit; found=1} flag && found {print}' README.md)
+          {
+            echo "body<<CHANGELOG_EOF"
+            echo "$BODY"
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
@@ -32,4 +42,4 @@ jobs:
             ⚠️ 更新插件后请**刷新播放器页面（Ctrl+R）或重启应用**，否则运行中的仍是旧版代码（content script 仅页面加载时注入一次）。更新后首次打开播放器也会出现对应提示。
 
             ### 变更
-            见仓库 README「更新日志」。
+            ${{ steps.changelog.outputs.body }}

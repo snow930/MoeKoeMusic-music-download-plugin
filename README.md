@@ -11,8 +11,12 @@
 ## ✨ 功能
 
 - 🔘 播放栏一键下载当前歌曲（与音量、播放列表等控制按钮同级）
+- 🎚 **音质选择**：面板列出该曲全部可用音质（标准/高品/FLAC/Hi-Res/全景声/超清/母带），记住上次选择
+- 📝 **歌词下载**：同步保存 `.lrc` 歌词（与音频同名）
+- 🖼 **封面下载**：同步保存封面图（与音频同名）
 - 📊 流式下载 + 实时进度提示（支持无 Content-Length 的分块响应，按已下载字节数显示）
 - ⏹ 下载中再次点击按钮可**取消**
+- 🗂 多文件顺序下载，单个失败不中断其余文件，结束汇总成功/失败数
 - 🎵 自动识别标题/歌手/专辑字段命名差异（兼容 KuGou API 多种字段名）
 - 🗂 文件名安全化：非法字符替换、超长文件名截断、扩展名自动识别
 - 🔁 页面切换后按钮自动重建（MutationObserver 监听 SPA 路由变化）
@@ -29,10 +33,12 @@
 
 ## 🧩 实现原理
 
-1. **读取当前歌曲** — 从 `localStorage['current_song']` 获取 `url`、`title`、`artist` 等字段
-2. **注入下载按钮** — 添加到播放器 `.extra-controls` 容器，使用 Font Awesome 下载图标
-3. **流式下载** — `fetch`（透传同源 cookie）+ `ReadableStream` 分块读取，实时显示进度
-4. **触发保存** — 音频数据转为 Blob URL，通过 `<a download>` 触发浏览器下载
+1. **读取当前歌曲** — 从 `localStorage['current_song']` 获取 `hash`、`qualityOptions`（可用音质表）、`img`、`title`、`artist` 等字段
+2. **注入下载按钮与音质面板** — 按钮添加到播放器 `.extra-controls` 容器；点击弹出音质面板，视觉对齐主项目 `.player-menu` 弹层（CSS 变量取色，明暗主题自动适配）
+3. **获取音频直链** — 优先复用 `qualityOptions`；已登录经本地 API server（KuGouMusicApi lite，默认 `http://127.0.0.1:6521`）调 `/song/url?hash=&quality=&ppage_id=` 取对应音质直链，未登录降级 `free_part=1` 试听；请求携带与主项目 `request.js` 同格式的 `Authorization` 头（读取 `localStorage['MoeData']`）
+4. **歌词/封面** — 歌词走 `/search/lyric?hash=` → `/lyric?fmt=lrc&decode=true` 两步接口拿 LRC 文本；封面直接使用 `current_song.img`
+5. **流式下载** — `fetch`（透传同源 cookie）+ `ReadableStream` 分块读取，实时显示进度
+6. **触发保存** — 文件数据转为 Blob URL，通过 `<a download>` 触发浏览器下载
 
 ## ⚠️ 已知限制
 
@@ -62,11 +68,13 @@ styles.css      # 按钮与提示样式
 # 手动打包（发布 zip 由 GitHub Actions 在打 tag 时自动生成）
 mkdir -p dist/MoeKoeMusic-download-plugin
 cp manifest.json content.js styles.css dist/MoeKoeMusic-download-plugin/
+cp -r icons dist/MoeKoeMusic-download-plugin/
 cd dist && zip -r ../MoeKoeMusic-download-plugin.zip MoeKoeMusic-download-plugin
 ```
 
 ## 📜 更新日志
 
+- **v1.2.0** — 新增音质选择面板：列出该曲实际可用音质并显示真实文件大小（缺失时按时长×码率估算并带 ≈），记住上次选择；新增歌词同步下载（.lrc）；新增封面同步下载；多文件顺序下载、单个失败不中断并汇总结果；新增可视化下载进度卡片（进度条 / 百分比 / 实时速度 / 取消）；本地 API 请求 15s 超时保护；扩展名改用 API 返回的 extName；面板 UI 对齐主项目弹层风格并适配明暗主题
 - **v1.1.3** — 新增插件图标：粉→蓝紫渐变圆角方形 + 白色下载箭头（icons/ 16/48/128，MV3 icons 字段），插件列表不再显示空白
 - **v1.1.2** — 增加插件更新自检：检测到版本更新时提示"请刷新页面或重启播放器后生效"；README/Release 同步注明更新后需刷新或重启
 - **v1.1.1** — 取消入口更明显：下载中按钮图标变为 ✕（红色）且提示"点击取消"，进度提示内嵌"取消"按钮；修复 `.downloading`/toast 的 `pointer-events:none` 导致点击取消被阻断的问题

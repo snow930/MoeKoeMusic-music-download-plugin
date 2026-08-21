@@ -64,3 +64,242 @@
 .moekoe-download-toast button.moekoe-download-cancel:hover {
   opacity: 0.85;
 }
+
+/* ==================== 下载进度卡片 ==================== */
+
+.moekoe-progress-toast {
+  min-width: 340px;
+}
+
+.moekoe-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.moekoe-progress-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.moekoe-progress-stat {
+  font-size: 12px;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+.moekoe-progress-track {
+  margin-top: 8px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.22);
+  overflow: hidden;
+}
+
+.moekoe-progress-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 3px;
+  background: #ff6b9d;
+  transition: width 0.2s ease;
+}
+
+/* 无 Content-Length 时的不确定进度动画 */
+.moekoe-progress-fill.indeterminate {
+  width: 100% !important;
+  opacity: 0.5;
+  animation: moekoe-indeterminate 1.2s linear infinite;
+}
+
+@keyframes moekoe-indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.moekoe-progress-fill.ok {
+  background: #67c23a;
+}
+
+.moekoe-progress-fill.err {
+  background: #f56c6c;
+}
+
+/* ==================== 音质选择面板 ==================== */
+/* 视觉对齐主项目 .player-menu/.player-menu-item（PlayerControl.scss）：
+   白底 + CSS 变量文字/hover/active 色；暗色主题随 html.dark 全局滤镜
+   一致压暗，与播放速度等原生菜单表现相同。 */
+
+.extra-btn.moekoe-download {
+  /* 面板定位锚点 */
+  overflow: visible;
+}
+
+.moekoe-panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  min-width: 170px;
+  padding: 6px;
+  border: 1px solid var(--background-color, #e3e3e3);
+  background: #fff;
+  border-radius: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  animation: moekoe-panel-in 0.2s ease;
+}
+
+/* 底部朝向按钮的小箭头（与 .player-menu::after 同款） */
+.moekoe-panel::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #fff;
+}
+
+@keyframes moekoe-panel-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 4px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.moekoe-panel-title {
+  padding: 4px 10px 6px;
+  font-size: 12px;
+  color: #909399;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.moekoe-panel-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.moekoe-panel-list.moekoe-panel-empty {
+  font-size: 13px;
+  color: #909399;
+  text-align: center;
+  padding: 8px 10px;
+}
+
+/* 音质项 / 勾选行（对齐 .player-menu-item） */
+.moekoe-panel-item {
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: none;
+  border-radius: 3px;
+  padding: 6px 10px;
+  margin: 0;
+  font-size: 13px;
+  background: transparent;
+  color: var(--text-color, #333);
+  cursor: pointer;
+  white-space: nowrap;
+  text-align: left;
+  transition: background-color 0.2s;
+}
+
+button.moekoe-panel-item {
+  font-family: inherit;
+}
+
+.moekoe-panel-item:hover {
+  background-color: var(--background-color, #f5f5f5);
+}
+
+.moekoe-panel-item.active {
+  background-color: var(--secondary-color, #ff6b9d);
+  color: var(--primary-text-color, #fff);
+}
+
+/* 音质项右侧的文件大小文案 */
+.moekoe-quality-size {
+  font-size: 12px;
+  color: #909399;
+}
+
+.moekoe-panel-item.active .moekoe-quality-size {
+  color: var(--primary-text-color, #fff);
+  opacity: 0.85;
+}
+
+/* 该曲不存在的音质档位：置灰不可点（对齐 .player-menu-item.disabled） */
+.moekoe-panel-item.disabled {
+  color: #909399;
+  cursor: default;
+}
+
+.moekoe-panel-item.disabled:hover {
+  background-color: transparent;
+}
+
+/* 自绘勾选框 */
+.moekoe-checkbox {
+  box-sizing: border-box;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #c0c4cc;
+  border-radius: 3px;
+  font-size: 10px;
+  line-height: 1;
+  color: #fff;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.moekoe-checkbox.checked {
+  background-color: var(--primary-color, #ff6b9d);
+  border-color: var(--primary-color, #ff6b9d);
+}
+
+.moekoe-checkbox.checked::after {
+  content: '✓';
+}
+
+/* 下载按钮 */
+.moekoe-panel-download {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 4px;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  border-radius: 3px;
+  background: var(--primary-color, #ff6b9d);
+  color: #fff;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: filter 0.18s ease;
+}
+
+.moekoe-panel-download:hover {
+  filter: brightness(1.08);
+}
+
+.moekoe-panel-download:active {
+  filter: brightness(0.95);
+}
