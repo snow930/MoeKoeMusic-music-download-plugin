@@ -5,7 +5,7 @@
   window.__MOEKOE_DOWNLOAD__ = true;
 
   // 与 manifest.json 的 version 保持同步（content script 无法读取 manifest）
-  var PLUGIN_VERSION = '1.2.0';
+  var PLUGIN_VERSION = '1.2.1';
   var VERSION_KEY = 'moekoe_download_plugin_version';
   var PREFS_KEY = 'moekoe_download_prefs';
 
@@ -119,6 +119,36 @@
   function setButtonIcon(btn, iconClass) {
     var i = btn.querySelector('i');
     if (i) i.className = iconClass;
+  }
+
+  // cancelAction 存在时在 toast 内嵌"取消"按钮。
+  // 注意：进度卡片使用独立 class（moekoe-progress-toast），
+  // 这里的 querySelector 不会误伤进度卡片。
+  function showToast(msg, duration, cancelAction) {
+    duration = duration || 2500;
+    var toast = document.querySelector('.moekoe-download-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'moekoe-download-toast';
+      document.body.appendChild(toast);
+    }
+    toast.innerHTML = '';
+    var span = document.createElement('span');
+    span.textContent = msg;
+    toast.appendChild(span);
+    if (cancelAction) {
+      var cancelBtn = document.createElement('button');
+      cancelBtn.className = 'moekoe-download-cancel';
+      cancelBtn.textContent = '取消';
+      cancelBtn.addEventListener('click', cancelAction);
+      toast.appendChild(cancelBtn);
+    }
+    toast.style.opacity = '1';
+    if (toastTimer) clearTimeout(toastTimer);
+    if (duration === 0) return; // 0 = 常驻显示
+    toastTimer = setTimeout(function () {
+      toast.style.opacity = '0';
+    }, duration);
   }
 
   // ==================== 本地 API 封装 ====================
@@ -260,7 +290,7 @@
   }
 
   // 取音频直链：已登录按候选音质取（失败明确报错，不静默降级音质）；
-  // 未登录降级试听（free_part:1）。
+  // 未登录降级试听（free_part:1）。响应字段在顶层（无 data 包装）：url[]/extName。
   async function resolveAudio(song, cand) {
     var auth = buildAuth();
     if (auth.loggedIn && cand) {
@@ -269,30 +299,27 @@
         quality: cand.value,
         ppage_id: '356753938'
       });
-      var d = r && r.data;
-      if (d && Array.isArray(d.url) && d.url[0]) {
-        return { url: d.url[0], ext: cleanExt(d.extName) };
+      if (r && Array.isArray(r.url) && r.url[0]) {
+        return { url: r.url[0], ext: cleanExt(r.extName) };
       }
       throw new Error('该音质获取失败，可能无权限（VIP/版权限制）');
     }
     var r2 = await apiGet('/song/url', { hash: song.playHash || song.hash, free_part: 1 });
-    var d2 = r2 && r2.data;
-    if (d2 && Array.isArray(d2.url) && d2.url[0]) {
-      return { url: d2.url[0], ext: cleanExt(d2.extName) };
+    if (r2 && Array.isArray(r2.url) && r2.url[0]) {
+      return { url: r2.url[0], ext: cleanExt(r2.extName) };
     }
     throw new Error('未获取到音频链接');
   }
 
-  // 歌词两步接口（与主项目 LyricsHandler.getLyrics 同流程，fmt=lrc 直接拿 LRC 文本）：
-  // 1) /search/lyric?hash= → candidates[0] 的 {id, accesskey}
-  // 2) /lyric?id=&accesskey=&fmt=lrc&decode=true → data.decodeContent
+  // 歌词两步接口（与主项目 LyricsHandler.getLyrics 同流程，fmt=lrc 直接拿 LRC 文本）。
+  // 响应字段在顶层（无 data 包装）：status/candidates/decodeContent。
   async function fetchLyrics(hash) {
     var s = await apiGet('/search/lyric', { hash: hash });
-    var cands = s && s.data && s.data.candidates;
-    if (!Array.isArray(cands) || !cands.length) return null;
-    var c = cands[0];
+    if (!s || s.status !== 200 || !Array.isArray(s.candidates) || !s.candidates.length) return null;
+    var c = s.candidates[0];
     var l = await apiGet('/lyric', { id: c.id, accesskey: c.accesskey, fmt: 'lrc', decode: 'true' });
-    return (l && l.data && l.data.decodeContent) || null;
+    if (!l || l.status !== 200) return null;
+    return l.decodeContent || null;
   }
 
   // 封面：current_song.img 即播放器使用的封面图（酷狗 {size} 模板已在主项目替换为 480）
@@ -373,7 +400,7 @@
   function showProgressCard(name) {
     closeProgressCard();
     var el = document.createElement('div');
-    el.className = 'moekoe-download-toast moekoe-progress-toast';
+    el.className = 'moekoe-progress-toast';
     el.innerHTML =
       '<div class="moekoe-progress-row">' +
         '<span class="moekoe-progress-name"></span>' +
@@ -497,28 +524,37 @@
       // ---- 组装任务清单 ----
       var tasks = [];
 
-      // 1) 音频：优先用户记住的音质，其次当前播放音质，最后列表最高音质
+      // 1) 音频：仅当面板中明确选择了音质才下载（取消选择 = 只下歌词/封面）
       var qualityInfo = await getQualityCandidates(song);
       var cands = qualityInfo.available;
       console.log('[Download] 音质候选:', cands.length, '个 (fromLite=' + qualityInfo.fromLite + ')');
       var chosen = null;
-      if (cands.length) {
-        chosen = cands.find(function (c) { return c.value === prefs.quality; }) ||
-                 cands.find(function (c) { return c.value === song.resolvedQuality; }) ||
-                 cands[0];
+      if (prefs.quality) {
+        chosen = cands.find(function (c) { return c.value === prefs.quality; }) || null;
+        if (!chosen) console.log('[Download] 记住的音质本次不可用:', prefs.quality);
       }
-      tasks.push({
-        label: '音频' + (chosen ? ' · ' + chosen.label : ''),
-        run: async function () {
-          var audio = song.url
-            ? { url: song.url, ext: getFileExtension(song.url) }
-            : await resolveAudio(song, chosen);
-          var filename = truncateFilename(baseName + '.' + (audio.ext || 'mp3'));
-          var blob = await fetchAsBlob(audio.url, updateProgressCard);
-          saveBlob(blob, filename);
-          return formatSize(blob.size);
-        }
-      });
+
+      // 全不选校验：音质未选且歌词/封面均未勾选
+      if (!chosen && !prefs.lyrics && !prefs.cover) {
+        closeProgressCard();
+        showToast('至少选择一项（音质 / 歌词 / 封面）');
+        return;
+      }
+
+      var tasks = [];
+
+      if (chosen) {
+        tasks.push({
+          label: '音频 · ' + chosen.label,
+          run: async function () {
+            var audio = await resolveAudio(song, chosen);
+            var filename = truncateFilename(baseName + '.' + (audio.ext || 'mp3'));
+            var blob = await fetchAsBlob(audio.url, updateProgressCard);
+            saveBlob(blob, filename);
+            return formatSize(blob.size);
+          }
+        });
+      }
 
       // 2) 歌词（.lrc，与音频同名）
       if (prefs.lyrics && song.hash) {
@@ -638,17 +674,25 @@
       list.textContent = '暂无可用音质信息';
       return;
     }
-    // 默认选中：用户上次选择 > 当前播放音质 > 列表最高音质
+    // 选中态：上次选择 > 首次使用时预选当前播放音质/最高音质。
+    // prefs.quality 语义：null=未初始化（自动预选）、''=用户显式取消（不预选）
     var selected = null;
     if (prefs.quality && cands.some(function (c) { return c.value === prefs.quality; })) {
       selected = prefs.quality;
-    } else if (song.resolvedQuality && cands.some(function (c) { return c.value === song.resolvedQuality; })) {
-      selected = song.resolvedQuality;
-    } else {
-      selected = cands[0].value;
+    } else if (prefs.quality === null) {
+      if (song.resolvedQuality && cands.some(function (c) { return c.value === song.resolvedQuality; })) {
+        selected = song.resolvedQuality;
+      } else {
+        selected = cands[0].value;
+      }
+    }
+    // 预选结果持久化，点「下载」即按当前高亮项执行
+    if (selected !== null && prefs.quality !== selected) {
+      prefs.quality = selected;
+      savePrefs(prefs);
     }
     // 仅列出该曲实际存在的档位（与播放器原生音质菜单一致的集合），
-    // 右侧显示文件大小；某档下载时无权限会由 toast 明确报错
+    // 右侧显示文件大小；再次点击已选音质可取消（仅下载勾选的歌词/封面）
     cands.forEach(function (cand) {
       var item = document.createElement('button');
       item.type = 'button';
@@ -665,11 +709,18 @@
         item.appendChild(sizeEl);
       }
       item.addEventListener('click', function () {
-        prefs.quality = cand.value;
-        savePrefs(prefs);
-        var act = list.querySelector('.moekoe-panel-item.active');
-        if (act) act.classList.remove('active');
-        item.classList.add('active');
+        if (prefs.quality === cand.value) {
+          // 再次点击已选音质 = 取消选择（仅下载勾选的歌词/封面）
+          prefs.quality = '';
+          savePrefs(prefs);
+          item.classList.remove('active');
+        } else {
+          prefs.quality = cand.value;
+          savePrefs(prefs);
+          var act = list.querySelector('.moekoe-panel-item.active');
+          if (act) act.classList.remove('active');
+          item.classList.add('active');
+        }
       });
       list.appendChild(item);
     });

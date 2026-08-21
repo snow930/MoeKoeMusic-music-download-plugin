@@ -24,8 +24,9 @@
   50% { opacity: 0.3; }
 }
 
-/* 下载进度提示 tooltip */
-.moekoe-download-toast {
+/* 下载进度提示 tooltip（普通 toast 与进度卡片共用基础样式） */
+.moekoe-download-toast,
+.moekoe-progress-toast {
   position: fixed;
   top: 60px;
   left: 50%;
